@@ -1,0 +1,36 @@
+# One-click deploy on Render: managed Postgres is free, so swap the MySQL
+# driver for Postgres in pom.xml if you use this file as-is.
+services:
+  - type: web
+    name: lms-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://lms-web.onrender.com
+      - key: SEED_ENABLED
+        value: "true"
+
+  - type: web
+    name: lms-web
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://lms-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
